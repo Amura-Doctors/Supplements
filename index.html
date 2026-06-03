@@ -375,11 +375,11 @@ function renderTable(rows){
     // If DB already says OOS — show that state, no need to report
     // If user reported this session — show reported state
     // Otherwise — show report button
-    const reportHTML= !ok
-      ? `<span style="color:var(--warn);font-size:11px;font-weight:600">✕ Out of Stock</span>`
-      : alreadyReported
-        ? `<button class="report-btn reported" disabled>✓ Reported</button>`
-        : `<button class="report-btn" onclick="openReport(${r.id},'${esc(r.name)}','${esc(r.country)}')" title="Report this as out of stock">Out of Stock?</button>`;
+    // If user reported this session — show reported state
+    // Otherwise — show button (text changes based on if it's already OOS)
+    const reportHTML= alreadyReported
+        ? `<button class="report-btn reported" disabled>✓ Sent</button>`
+        : `<button class="report-btn" onclick="openReport(${r.id},'${esc(r.name)}','${esc(r.country)}')" title="Suggest a link or report OOS">${!ok ? 'Suggest Link' : 'Out of Stock?'}</button>`;
     return`<tr class="${ok?'':'oos'}">
       <td class="ctr"><span class="status-dot ${ok?'in':'out'}" title="${ok?'In stock':'Out of stock'}"></span></td>
       <td class="name-cell" title="${esc(r.name)}">${esc(r.name)}${r.notes?`<small>${esc(r.notes)}</small>`:''}</td>
@@ -409,11 +409,9 @@ function renderCards(rows){
       ${r.dose||r.website?`<div style="font-size:12px;color:var(--muted)">${esc(r.website||'')}${r.website&&r.dose?' · ':''}${esc(r.dose||'')}</div>`:''}
       <div class="card-actions" onclick="event.stopPropagation()">${lBtns}</div>
       <div onclick="event.stopPropagation()">
-        ${!ok
-          ? `<span style="color:var(--warn);font-size:11px;font-weight:600;margin-top:2px;display:block">✕ Out of Stock</span>`
-          : alreadyReported
-            ? `<button class="report-btn reported" disabled style="font-size:11px;margin-top:2px">✓ Reported</button>`
-            : `<button class="report-btn" style="font-size:11px;margin-top:2px" onclick="openReport(${r.id},'${esc(r.name)}','${esc(r.country)}')">Report Out of Stock</button>`}
+        ${alreadyReported
+            ? `<button class="report-btn reported" disabled style="font-size:11px;margin-top:2px">✓ Sent</button>`
+            : `<button class="report-btn" style="font-size:11px;margin-top:2px" onclick="openReport(${r.id},'${esc(r.name)}','${esc(r.country)}')">${!ok ? 'Suggest Link' : 'Report Out of Stock'}</button>`}
       </div>
     </div>`;
   }).join('')}</div>`;
@@ -434,13 +432,11 @@ function openSlide(id){
     ${r.notes?`<div class="sp-row"><div class="sp-lbl">Notes</div><div class="sp-val" style="font-size:13px;color:var(--muted)">${esc(r.notes)}</div></div>`:''}
     ${r.link?`<div class="sp-row"><div class="sp-lbl">Link</div><div class="sp-val" style="word-break:break-all;font-size:11.5px;color:var(--muted)">${esc(r.link)}</div></div>`:''}
   `;
-  document.getElementById('spActions').innerHTML=`
+ document.getElementById('spActions').innerHTML=`
     ${r.link?`<a class="lbtn lbtn-open" style="padding:7px 14px;font-size:12.5px" href="${esc(r.link)}" target="_blank" rel="noopener">Open</a><button class="lbtn lbtn-copy" style="padding:7px 14px;font-size:12.5px" onclick="copyLink(this,'${esc(r.link)}')">Copy</button>`:''}
-    ${!ok
-      ? `<span style="color:var(--warn);font-weight:600;font-size:12.5px;margin-left:auto">✕ Already Out of Stock</span>`
-      : alreadyReported
-        ? `<button class="report-btn reported" disabled style="margin-left:auto">✓ Reported</button>`
-        : `<button class="report-btn" style="margin-left:auto" onclick="closeSlide();openReport(${r.id},'${esc(r.name)}','${esc(r.country)}')">Report Out of Stock</button>`}
+    ${alreadyReported
+        ? `<button class="report-btn reported" disabled style="margin-left:auto">✓ Sent</button>`
+        : `<button class="report-btn" style="margin-left:auto" onclick="closeSlide();openReport(${r.id},'${esc(r.name)}','${esc(r.country)}')">${!ok ? 'Suggest Alternative Link' : 'Report Out of Stock'}</button>`}
   `;
   document.getElementById('slideOverlay').classList.add('open');
   document.getElementById('slidePanel').classList.add('open');
