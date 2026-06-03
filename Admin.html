@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Supplement Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F7F5F0;--surface:#fff;--border:#E8E3DB;--muted:#9E9589;--text:#1A1714;
+  --accent:#2D6A4F;--accent-l:#D8EDE4;--accent-d:#1B4332;
+  --warn:#C4451A;--warn-l:#FDEEE9;--shadow:0 2px 12px rgba(0,0,0,.07);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.13);--r:12px;--panel:#1B4332;
+}
+[data-theme="dark"]{
+  --bg:#111210;--surface:#1C1E1B;--border:#2E302C;--muted:#6B6E67;--text:#E8E4DC;
+  --accent:#4CAF82;--accent-l:#1A3328;--accent-d:#2A6A4F;--warn:#E07050;--warn-l:#2A1510;
+  --shadow:0 2px 12px rgba(0,0,0,.3);--shadow-lg:0 8px 32px rgba(0,0,0,.4);--panel:#141614;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'DM Sans',sans-serif;color:var(--text);background:var(--bg);display:flex;flex-direction:column;font-size:14px;transition:background .25s,color .25s;}
+
+/* ── LOGIN SCREEN ── */
+.login-screen{
+  display:flex;align-items:center;justify-content:center;
+  position:fixed;inset:0;background:var(--accent-d);z-index:9999;
+}
+.login-box{
+  background:var(--surface);border-radius:18px;padding:36px;
+  width:100%;max-width:380px;text-align:center;box-shadow:var(--shadow-lg);
+}
+.login-box h2{font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:6px;}
+.login-box p{color:var(--muted);font-size:13px;margin-bottom:24px;}
+.login-input{
+  width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:9px;
+  font-family:'DM Sans',sans-serif;font-size:15px;background:var(--bg);
+  color:var(--text);outline:none;margin-bottom:12px;transition:border-color .15s;text-align:center;
+  letter-spacing:3px;
+}
+.login-input:focus{border-color:var(--accent);}
+.login-err{color:var(--warn);font-size:12.5px;margin-bottom:10px;display:none;}
+.login-err.show{display:block;}
+
+/* ── LAYOUT ── */
+.app-shell{display:flex;flex:1;overflow:hidden;}
+.left-panel{
+  width:300px;min-width:260px;flex-shrink:0;background:var(--panel);
+  color:#fff;display:flex;flex-direction:column;
+  box-shadow:4px 0 24px rgba(0,0,0,.15);z-index:10;
+}
+.left-top{padding:22px 22px 16px;border-bottom:1px solid rgba(255,255,255,.08);}
+.app-label{font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:4px;}
+.left-top h1{font-family:'DM Serif Display',serif;font-size:21px;color:#fff;line-height:1.2;}
+.admin-badge{display:inline-block;background:rgba(255,200,0,.2);border:1px solid rgba(255,200,0,.4);color:#ffd700;font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;letter-spacing:.5px;margin-top:4px;}
+.left-actions{padding:12px 22px;display:flex;gap:7px;border-bottom:1px solid rgba(255,255,255,.08);}
+.left-filters{padding:14px 22px;display:flex;flex-direction:column;gap:11px;flex:1;overflow-y:auto;}
+.left-footer{padding:10px 22px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between;}
+.filter-label{font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.32);margin-bottom:4px;}
+.result-count{font-size:11.5px;color:rgba(255,255,255,.38);}
+.result-count strong{color:rgba(255,255,255,.78);}
+
+.search-wrap{position:relative;}
+.search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.38);pointer-events:none;}
+.search-input{width:100%;padding:9px 11px 9px 33px;border:1.5px solid rgba(255,255,255,.11);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;background:rgba(255,255,255,.06);color:#fff;outline:none;transition:all .18s;}
+.search-input:focus{border-color:rgba(255,255,255,.38);background:rgba(255,255,255,.1);}
+.search-input::placeholder{color:rgba(255,255,255,.28);}
+select.fsel{width:100%;padding:9px 30px 9px 11px;border:1.5px solid rgba(255,255,255,.11);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;background:rgba(255,255,255,.06) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='rgba(255,255,255,0.38)' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 11px center;appearance:none;color:#fff;outline:none;cursor:pointer;transition:all .18s;}
+select.fsel:focus{border-color:rgba(255,255,255,.38);}
+select.fsel option{color:var(--text);background:var(--surface);}
+
+.av-toggle{display:flex;gap:5px;}
+.av-btn{flex:1;padding:6px 6px;border-radius:7px;border:1.5px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:rgba(255,255,255,.5);font-family:'DM Sans',sans-serif;font-size:11.5px;font-weight:500;cursor:pointer;transition:all .15s;text-align:center;}
+.av-btn:hover{background:rgba(255,255,255,.11);color:#fff;}
+.av-btn.active{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3);color:#fff;font-weight:600;}
+.av-btn.active.in{background:rgba(45,106,79,.55);border-color:#5aab82;}
+.av-btn.active.out{background:rgba(196,69,26,.4);border-color:#e07050;}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:8px 13px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer;border:none;transition:all .15s;white-space:nowrap;flex-shrink:0;}
+.btn-light{background:#fff;color:var(--accent-d);}
+.btn-light:hover{background:rgba(255,255,255,.88);transform:translateY(-1px);}
+.btn-ghost{background:rgba(255,255,255,.1);color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.16);}
+.btn-ghost:hover{background:rgba(255,255,255,.18);}
+.btn-sm{padding:6px 10px;font-size:11.5px;}
+.btn-clear{background:transparent;color:rgba(255,255,255,.35);border:1px solid rgba(255,255,255,.1);font-size:11px;padding:5px 10px;}
+.btn-clear:hover{color:rgba(255,255,255,.65);border-color:rgba(255,255,255,.22);}
+.btn-save{background:var(--accent);color:#fff;}
+.btn-save:hover{background:#245c43;}
+.btn-cancel{background:transparent;color:var(--text);border:1.5px solid var(--border);}
+.btn-cancel:hover{border-color:var(--accent);color:var(--accent);}
+.btn-danger{background:var(--warn);color:#fff;}
+.btn-danger:hover{background:#a83a16;}
+
+/* ── RIGHT ── */
+.right-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);transition:background .25s;}
+.toolbar{padding:12px 22px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0;gap:10px;transition:background .25s,border-color .25s;}
+.toolbar-left{display:flex;align-items:center;gap:7px;}
+.toolbar-right{display:flex;align-items:center;gap:7px;}
+.view-toggle{display:flex;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;overflow:hidden;}
+.vt-btn{padding:5px 11px;background:transparent;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;color:var(--muted);transition:all .15s;display:flex;align-items:center;gap:4px;}
+.vt-btn.active{background:var(--accent-d);color:#fff;}
+.vt-btn:not(.active):hover{background:var(--border);}
+.tool-btn{display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:7px;border:1.5px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;transition:all .14s;white-space:nowrap;}
+.tool-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-l);}
+.tool-btn.active{background:var(--accent-l);border-color:var(--accent);color:var(--accent-d);}
+/* suggestion badge */
+.sugg-badge{display:inline-flex;align-items:center;justify-content:center;background:var(--warn);color:#fff;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:100px;padding:0 4px;margin-left:3px;}
+
+.stats-bar{padding:9px 22px;display:flex;gap:7px;flex-wrap:wrap;align-items:center;flex-shrink:0;border-bottom:1px solid var(--border);background:var(--surface);transition:background .25s,border-color .25s;}
+.stat-chip{background:var(--bg);border:1px solid var(--border);border-radius:100px;padding:3px 11px;font-size:12px;color:var(--muted);}
+.stat-chip strong{color:var(--text);}
+.stat-chip.danger{background:var(--warn-l);border-color:#f5c2b0;color:var(--warn);}
+.stat-chip.danger strong{color:var(--warn);}
+.stat-chip.gold{background:#fffbe6;border-color:#f5d570;color:#7a5c00;}
+.stat-chip.gold strong{color:#7a5c00;}
+
+.content{flex:1;overflow-y:auto;padding:18px 22px 40px;}
+.loading-wrap,.empty-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;gap:12px;color:var(--muted);font-size:14px;}
+.spinner{width:28px;height:28px;border:2.5px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .65s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── TABLE ── */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);transition:background .25s,border-color .25s;}
+table{width:100%;border-collapse:collapse;table-layout:fixed;}
+col.c0{width:38px;}col.c1{width:15%;}col.c2{width:9%;}col.c3{width:11%;}col.c4{width:13%;}col.c5{width:8%;}col.c6{width:9%;}col.c7{width:13%;}col.c8{width:13%;}
+thead th{background:#F0EDE8;padding:10px 12px;text-align:left;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+[data-theme="dark"] thead th{background:#1A1C19;}
+thead th.ctr{text-align:center;}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:var(--bg);}
+tbody tr.oos{opacity:.45;}tbody tr.oos:hover{opacity:.7;}
+td{padding:10px 12px;vertical-align:middle;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+td.ctr{text-align:center;}
+.name-cell{font-weight:600;color:var(--text);}
+.name-cell small{display:block;font-size:11px;font-weight:400;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* ── CARDS ── */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:8px;transition:box-shadow .15s,border-color .15s,background .25s;}
+.card:hover{box-shadow:var(--shadow-lg);border-color:var(--accent);}
+.card.oos{opacity:.5;}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.card-name{font-size:14px;font-weight:600;color:var(--text);}
+.card-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:3px;}
+.card-actions{display:flex;gap:5px;flex-wrap:wrap;}
+
+/* ── TAGS ── */
+.tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:100px;font-size:11px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tag-country{background:var(--accent-l);color:var(--accent-d);}
+.tag-source{background:#E6EAF4;color:#2D4280;}
+[data-theme="dark"] .tag-source{background:#1A1F3A;color:#7B9FE8;}
+.tag-spec{background:#EEF3F0;color:#3D5046;}
+[data-theme="dark"] .tag-spec{background:#1A2820;color:#6BAA80;}
+.tag-nonveg{background:var(--warn-l);color:var(--warn);}
+
+/* ── AVAIL PILL ── */
+.avail-pill{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;border:2px solid;cursor:pointer;transition:all .18s;font-size:12px;background:transparent;flex-shrink:0;}
+.avail-pill.in{border-color:#5aab82;color:#2D6A4F;background:var(--accent-l);}
+.avail-pill.in:hover{background:#b8dece;}
+.avail-pill.out{border-color:#e07050;color:var(--warn);background:var(--warn-l);}
+.avail-pill.out:hover{background:#f8d5cb;}
+
+/* ── VERIFIED ── */
+.vdate{font-size:11px;color:var(--muted);white-space:nowrap;}
+.vdate.fresh{color:var(--accent);}
+.vdate.stale{color:#b07030;font-weight:600;}
+.verify-btn{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;color:var(--muted);background:none;border:1px solid var(--border);border-radius:5px;padding:2px 6px;cursor:pointer;transition:all .14s;}
+.verify-btn:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-l);}
+
+/* ── LINK BTNS ── */
+.link-acts{display:flex;gap:4px;}
+.lbtn{display:inline-flex;align-items:center;gap:3px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;padding:4px 8px;border-radius:6px;border:1.5px solid;cursor:pointer;transition:all .14s;white-space:nowrap;text-decoration:none;}
+.lbtn-open{background:var(--accent-l);border-color:#b4d9c8;color:var(--accent-d);}
+.lbtn-open:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+.lbtn-copy{background:var(--surface);border-color:var(--border);color:var(--muted);}
+.lbtn-copy:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-l);}
+.lbtn-copy.copied{background:var(--accent-l);border-color:var(--accent);color:var(--accent-d);}
+
+/* ── ROW ACTS ── */
+.row-acts{display:flex;gap:3px;}
+.act-btn{display:inline-flex;align-items:center;gap:3px;padding:4px 8px;border-radius:6px;border:1.5px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;transition:all .14s;white-space:nowrap;}
+.act-btn:hover{background:var(--accent-l);border-color:var(--accent);color:var(--accent-d);}
+.act-btn.del:hover{background:var(--warn-l);border-color:var(--warn);color:var(--warn);}
+
+/* ── SUGGESTIONS PANEL ── */
+.sugg-panel{padding:18px 22px 40px;}
+.sugg-title{font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:16px;color:var(--text);}
+.sugg-empty{color:var(--muted);font-size:14px;text-align:center;padding:40px;}
+.sugg-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:8px;box-shadow:var(--shadow);display:flex;align-items:flex-start;justify-content:space-between;gap:14px;transition:background .25s;}
+.sugg-info{flex:1;min-width:0;}
+.sugg-name{font-weight:600;font-size:14px;color:var(--text);}
+.sugg-meta{font-size:12px;color:var(--muted);margin-top:3px;}
+.sugg-link{font-size:12px;color:var(--accent);word-break:break-all;margin-top:4px;}
+.sugg-link a{color:var(--accent);text-decoration:none;}
+.sugg-link a:hover{text-decoration:underline;}
+.sugg-date{font-size:11px;color:var(--muted);flex-shrink:0;}
+.sugg-acts{display:flex;gap:6px;align-items:center;flex-shrink:0;flex-direction:column;}
+
+/* ── MODALS ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(10,8,6,.6);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border-radius:18px;padding:26px;width:100%;max-width:520px;box-shadow:var(--shadow-lg);animation:fadeUp .2s ease;max-height:92vh;overflow-y:auto;transition:background .25s;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px) scale(.97);}to{opacity:1;transform:none;}}
+.modal h2{font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:18px;color:var(--text);}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+.form-grid .full{grid-column:1/-1;}
+.field label{display:block;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:5px;}
+.field input,.field select,.field textarea{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13.5px;background:var(--bg);color:var(--text);outline:none;transition:border-color .15s,background .25s;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);background:var(--surface);}
+.field textarea{resize:vertical;min-height:56px;}
+.stock-row{display:flex;align-items:center;gap:10px;padding:5px 0;}
+.toggle-sw{position:relative;width:38px;height:22px;flex-shrink:0;}
+.toggle-sw input{opacity:0;width:0;height:0;}
+.tog-sl{position:absolute;inset:0;background:#ccc;border-radius:22px;cursor:pointer;transition:background .2s;}
+.tog-sl::before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.toggle-sw input:checked+.tog-sl{background:var(--accent);}
+.toggle-sw input:checked+.tog-sl::before{transform:translateX(16px);}
+.dup-warn{display:none;background:var(--warn-l);border:1px solid #f5c2b0;border-radius:8px;padding:8px 12px;margin-bottom:12px;font-size:12.5px;color:var(--warn);}
+.dup-warn.show{display:block;}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);}
+
+.del-confirm{display:none;position:fixed;inset:0;background:rgba(10,8,6,.55);z-index:600;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
+.del-confirm.open{display:flex;}
+.del-box{background:var(--surface);border-radius:14px;padding:24px 26px;max-width:320px;width:90%;box-shadow:var(--shadow-lg);text-align:center;animation:fadeUp .18s ease;}
+.del-box h3{font-size:16px;font-weight:600;margin-bottom:6px;}
+.del-box p{font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.5;}
+.del-box-acts{display:flex;gap:8px;justify-content:center;}
+
+/* ── SLIDE PANEL ── */
+.slide-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:300;backdrop-filter:blur(2px);}
+.slide-overlay.open{display:block;}
+.slide-panel{position:fixed;right:0;top:0;bottom:0;width:380px;background:var(--surface);box-shadow:var(--shadow-lg);z-index:301;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .28s cubic-bezier(.4,0,.2,1);}
+.slide-panel.open{transform:translateX(0);}
+.sp-header{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:10px;}
+.sp-title{font-family:'DM Serif Display',serif;font-size:19px;color:var(--text);}
+.sp-close{background:none;border:none;cursor:pointer;color:var(--muted);font-size:20px;line-height:1;transition:color .14s;}
+.sp-close:hover{color:var(--text);}
+.sp-body{padding:18px 20px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px;}
+.sp-row{display:flex;flex-direction:column;gap:3px;}
+.sp-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);}
+.sp-val{font-size:13.5px;color:var(--text);font-weight:500;}
+.sp-actions{display:flex;gap:7px;padding:14px 20px;border-top:1px solid var(--border);}
+
+#toast{position:fixed;bottom:22px;right:22px;background:var(--accent-d);color:#fff;padding:10px 18px;border-radius:9px;font-size:13px;font-weight:600;box-shadow:var(--shadow-lg);z-index:9999;transform:translateY(70px);opacity:0;transition:all .28s cubic-bezier(.34,1.56,.64,1);pointer-events:none;}
+#toast.show{transform:translateY(0);opacity:1;}
+#toast.err{background:var(--warn);}
+
+@media print{.left-panel,.toolbar,.stats-bar,.avail-pill,.act-btn,.lbtn-copy,.verify-btn,#toast{display:none!important;}.app-shell{display:block;}.right-panel{overflow:visible;}.content{padding:0;}body,[data-theme="dark"]{background:#fff!important;color:#000!important;}.table-wrap{box-shadow:none;border:1px solid #ccc;}}
+@media(max-width:860px){.app-shell{flex-direction:column;}.left-panel{width:100%;min-width:unset;max-height:240px;}.slide-panel{width:100%;}.form-grid{grid-template-columns:1fr;}.form-grid .full{grid-column:1;}table{display:block;overflow-x:auto;}}
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ── -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <h2>Admin Access</h2>
+    <p>Enter your password to continue</p>
+    <input class="login-input" id="loginInput" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')tryLogin()"/>
+    <div class="login-err" id="loginErr">Incorrect password. Try again.</div>
+    <button class="btn btn-save" style="width:100%;justify-content:center;padding:12px" onclick="tryLogin()">Unlock</button>
+  </div>
+</div>
+
+<div class="app-shell" id="appShell" style="display:none">
+<!-- ── LEFT ── -->
+<aside class="left-panel">
+  <div class="left-top">
+    <div class="app-label">Admin Panel</div>
+    <h1>Supplement<br>Repository</h1>
+    <span class="admin-badge">ADMIN</span>
+  </div>
+  <div class="left-actions">
+    <button class="btn btn-light" onclick="openModal()">
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add
+    </button>
+    <button class="btn btn-ghost btn-sm" onclick="exportCSV()">
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export
+    </button>
+  </div>
+  <div class="left-filters">
+    <div>
+      <div class="filter-label">Search</div>
+      <div class="search-wrap">
+        <svg class="search-icon" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="search-input" id="searchInput" type="text" placeholder="/ to search…" oninput="filterData()"/>
+      </div>
+    </div>
+    <div>
+      <div class="filter-label">Availability</div>
+      <div class="av-toggle">
+        <button class="av-btn active" id="avAll" onclick="setAv('all')">All</button>
+        <button class="av-btn in" id="avIn" onclick="setAv('in')">✓ In</button>
+        <button class="av-btn out" id="avOut" onclick="setAv('out')">✕ Out</button>
+      </div>
+    </div>
+    <div>
+      <div class="filter-label">Supplement</div>
+      <select class="fsel" id="nameFilter" onchange="filterData()"><option value="">All</option></select>
+    </div>
+    <div>
+      <div class="filter-label">Country</div>
+      <select class="fsel" id="countryFilter" onchange="filterData()"><option value="">All</option></select>
+    </div>
+    <div>
+      <div class="filter-label">Source</div>
+      <select class="fsel" id="sourceFilter" onchange="filterData()"><option value="">All</option></select>
+    </div>
+    <div>
+      <div class="filter-label">Specification</div>
+      <select class="fsel" id="specFilter" onchange="filterData()"><option value="">All</option></select>
+    </div>
+    <button class="btn btn-clear" onclick="clearAll()">
+      <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      Clear filters
+    </button>
+  </div>
+  <div class="left-footer">
+    <span class="result-count" id="resultCount"></span>
+  </div>
+</aside>
+
+<!-- ── RIGHT ── -->
+<div class="right-panel">
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <div class="view-toggle">
+        <button class="vt-btn active" id="vt-table" onclick="setView('table')">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="9" x2="9" y2="21"/></svg>
+          Table
+        </button>
+        <button class="vt-btn" id="vt-cards" onclick="setView('cards')">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          Cards
+        </button>
+      </div>
+    </div>
+    <div class="toolbar-right">
+      <button class="tool-btn" id="suggBtn" onclick="showSuggestions()">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Suggestions
+        <span class="sugg-badge" id="suggBadge" style="display:none">0</span>
+      </button>
+      <button class="tool-btn" onclick="window.print()">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Print
+      </button>
+      <button class="tool-btn" id="darkBtn" onclick="toggleDark()">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        Dark
+      </button>
+    </div>
+  </div>
+  <div class="stats-bar" id="statsBar"></div>
+  <div class="content" id="content">
+    <div class="loading-wrap"><div class="spinner"></div>Loading…</div>
+  </div>
+</div>
+</div>
+
+<!-- ── SLIDE PANEL ── -->
+<div class="slide-overlay" id="slideOverlay" onclick="closeSlide()"></div>
+<div class="slide-panel" id="slidePanel">
+  <div class="sp-header">
+    <div><div class="sp-lbl" style="margin-bottom:4px">Quick View</div><div class="sp-title" id="spTitle">—</div></div>
+    <button class="sp-close" onclick="closeSlide()">✕</button>
+  </div>
+  <div class="sp-body" id="spBody"></div>
+  <div class="sp-actions" id="spActions"></div>
+</div>
+
+<!-- ── DELETE CONFIRM ── -->
+<div class="del-confirm" id="delConfirm">
+  <div class="del-box">
+    <h3>Delete supplement?</h3>
+    <p id="delText">This will permanently remove this entry.</p>
+    <div class="del-box-acts">
+      <button class="btn btn-cancel" onclick="closeDelConfirm()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ADD/EDIT MODAL ── -->
+<div class="modal-overlay" id="modalOverlay" onclick="handleOverlay(event)">
+  <div class="modal">
+    <h2 id="modalTitle">Add Supplement</h2>
+    <div class="dup-warn" id="dupWarn">⚠ Similar entry already exists.</div>
+    <div class="form-grid">
+      <div class="field full"><label>Supplement Name *</label><input id="fName" type="text" list="nameList" oninput="checkDup()"/><datalist id="nameList"></datalist></div>
+      <div class="field"><label>Country *</label><input id="fCountry" type="text" list="countryList"/><datalist id="countryList"></datalist></div>
+      <div class="field"><label>Specification</label><input id="fSpec" type="text" list="specList"/><datalist id="specList"></datalist></div>
+      <div class="field"><label>Website / Source</label><input id="fWeb" type="text" list="sourceList"/><datalist id="sourceList"></datalist></div>
+      <div class="field"><label>Dose</label><input id="fDose" type="text" placeholder="e.g. 5000 IU"/></div>
+      <div class="field"><label>Last Verified</label><input id="fVerified" type="date"/></div>
+      <div class="field full"><label>Product Link</label><input id="fLink" type="url" placeholder="https://…"/></div>
+      <div class="field full"><label>Notes</label><textarea id="fNotes"></textarea></div>
+      <div class="field full">
+        <div class="stock-row">
+          <label class="toggle-sw"><input type="checkbox" id="fStock" checked/><span class="tog-sl"></span></label>
+          <span style="font-size:13px;font-weight:500;color:var(--text)">In Stock<small style="display:block;font-size:11.5px;color:var(--muted);font-weight:400">Toggle off if unavailable</small></span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-save" id="saveBtn" onclick="save()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── CONFIG ───────────────────────────────────────────────────────
+const SB_URL  = 'https://wixaypgspgmotddgfujv.supabase.co';
+const SB_KEY  = 'sb_publishable_2CBjiqr8sPtCXg8i6AhhVQ_iA4n8-wr';
+const ADMIN_PASSWORD = 'Amura@123'; // ← CHANGE THIS to your own password
+
+const { createClient } = supabase;
+const db = createClient(SB_URL, SB_KEY);
+
+let allData   = [];
+let editId    = null;
+let deleteId  = null;
+let avFilter  = 'all';
+let viewMode  = 'table';
+let darkMode  = localStorage.getItem('dark_admin') === '1';
+
+// ── DARK MODE ────────────────────────────────────────────────────
+if (darkMode) document.documentElement.setAttribute('data-theme','dark');
+function toggleDark() {
+  darkMode = !darkMode;
+  document.documentElement.setAttribute('data-theme', darkMode?'dark':'light');
+  localStorage.setItem('dark_admin', darkMode?'1':'0');
+  document.getElementById('darkBtn').classList.toggle('active', darkMode);
+}
+
+// ── LOGIN ────────────────────────────────────────────────────────
+function tryLogin() {
+  const val = document.getElementById('loginInput').value;
+  if (val === ADMIN_PASSWORD) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appShell').style.display = 'flex';
+    sessionStorage.setItem('admin_auth','1');
+    init();
+  } else {
+    document.getElementById('loginErr').classList.add('show');
+    document.getElementById('loginInput').value = '';
+    document.getElementById('loginInput').focus();
+  }
+}
+// Check if already authenticated this session
+if (sessionStorage.getItem('admin_auth')==='1') {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appShell').style.display = 'flex';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key==='/' && !['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) { e.preventDefault(); document.getElementById('searchInput').focus(); }
+  if (e.key==='Escape') { closeModal(); closeDelConfirm(); closeSlide(); }
+  if (document.getElementById('loginScreen').style.display!=='none' && e.key==='Enter') tryLogin();
+});
+
+// ── NORM ─────────────────────────────────────────────────────────
+function norm(s){return(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
+
+// ── INIT ─────────────────────────────────────────────────────────
+async function init() {
+  const [{data,error}, suggRes] = await Promise.all([
+    db.from('supplements').select('*').order('name'),
+    db.from('suggestions').select('*').eq('reviewed',false).order('created_at',{ascending:false})
+  ]);
+  if (error) { document.getElementById('content').innerHTML=`<div class="loading-wrap"><p style="color:var(--warn)">Connection failed: ${error.message}</p></div>`; return; }
+  allData = data||[];
+  const pending = (suggRes.data||[]).length;
+  const badge = document.getElementById('suggBadge');
+  if (pending>0){badge.textContent=pending;badge.style.display='inline-flex';}
+  else badge.style.display='none';
+  populateFilters();
+  filterData();
+}
+
+// ── FILTERS ──────────────────────────────────────────────────────
+function populateFilters(){
+  const u=k=>[...new Set(allData.map(r=>r[k]).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+  fillSel('nameFilter',u('name'),'All');
+  fillSel('countryFilter',u('country'),'All');
+  fillSel('sourceFilter',u('website'),'All');
+  fillSel('specFilter',u('specification'),'All');
+  fillDL('nameList',u('name'));fillDL('countryList',u('country'));
+  fillDL('specList',u('specification'));fillDL('sourceList',u('website'));
+}
+function fillSel(id,arr,ph){const el=document.getElementById(id),cur=el.value;el.innerHTML=`<option value="">${ph}</option>`+arr.map(v=>`<option value="${esc(v)}"${v===cur?' selected':''}>${esc(v)}</option>`).join('');}
+function fillDL(id,arr){const el=document.getElementById(id);if(el)el.innerHTML=arr.map(v=>`<option value="${esc(v)}">`).join('');}
+function setAv(v){avFilter=v;document.querySelectorAll('.av-btn').forEach(b=>b.classList.remove('active'));document.getElementById('av'+v.charAt(0).toUpperCase()+v.slice(1)).classList.add('active');filterData();}
+function setView(v){viewMode=v;document.querySelectorAll('.vt-btn').forEach(b=>b.classList.remove('active'));document.getElementById('vt-'+v).classList.add('active');document.getElementById('suggBtn').classList.remove('active');filterData();}
+function filterData(){
+  const q=norm(document.getElementById('searchInput').value);
+  const name=document.getElementById('nameFilter').value;
+  const country=document.getElementById('countryFilter').value;
+  const source=document.getElementById('sourceFilter').value;
+  const spec=document.getElementById('specFilter').value;
+  const filtered=allData.filter(r=>{
+    const hay=norm((r.name||'')+(r.website||'')+(r.dose||'')+(r.notes||'')+(r.specification||'')+(r.country||''));
+    return(!q||hay.includes(q))&&(!name||r.name===name)&&(!country||r.country===country)&&(!source||r.website===source)&&(!spec||r.specification===spec||(r.specification||'').toLowerCase()==='none specific')&&(avFilter==='all'||(avFilter==='in'&&r.in_stock!==false)||(avFilter==='out'&&r.in_stock===false));
+  });
+  renderStats(filtered);
+  viewMode==='table'?renderTable(filtered):renderCards(filtered);
+}
+function clearAll(){document.getElementById('searchInput').value='';['nameFilter','countryFilter','sourceFilter','specFilter'].forEach(id=>document.getElementById(id).value='');setAv('all');}
+
+// ── STATS ─────────────────────────────────────────────────────────
+function renderStats(rows){
+  const outs=rows.filter(r=>r.in_stock===false).length;
+  const supps=new Set(rows.map(r=>r.name).filter(Boolean)).size;
+  const countries=new Set(rows.map(r=>r.country).filter(Boolean)).size;
+  document.getElementById('statsBar').innerHTML=`<div class="stat-chip"><strong>${rows.length}</strong> Entries</div><div class="stat-chip"><strong>${supps}</strong> Supplements</div><div class="stat-chip"><strong>${countries}</strong> Countries</div>${outs?`<div class="stat-chip danger"><strong>${outs}</strong> Out of Stock</div>`:''}`;
+  document.getElementById('resultCount').innerHTML=`<strong>${rows.length}</strong> shown`;
+}
+
+// ── TABLE ─────────────────────────────────────────────────────────
+function renderTable(rows){
+  const el=document.getElementById('content');
+  if(!rows.length){el.innerHTML='<div class="empty-wrap">No supplements match.</div>';return;}
+  const today=new Date();today.setHours(0,0,0,0);
+  el.innerHTML=`<div class="table-wrap"><table>
+  <colgroup><col class="c0"><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5"><col class="c6"><col class="c7"><col class="c8"></colgroup>
+  <thead><tr><th class="ctr">✓</th><th>Supplement</th><th>Country</th><th>Source</th><th>Specification</th><th>Dose</th><th>Verified</th><th>Link</th><th>Actions</th></tr></thead>
+  <tbody>${rows.map(r=>{
+    const ok=r.in_stock!==false,isNV=/non-veg|bovine|marine/i.test(r.specification||'');
+    const vHTML=verifyHTML(r.last_verified,today);
+    const lHTML=r.link?`<div class="link-acts"><a class="lbtn lbtn-open" href="${esc(r.link)}" target="_blank" rel="noopener">Open</a><button class="lbtn lbtn-copy" onclick="copyLink(this,'${esc(r.link)}')">Copy</button></div>`:`<span style="color:var(--muted);font-size:11px">—</span>`;
+    return`<tr class="${ok?'':'oos'}">
+      <td class="ctr"><button class="avail-pill ${ok?'in':'out'}" onclick="toggleStock(${r.id},${ok})">${ok?'✓':'✕'}</button></td>
+      <td class="name-cell" title="${esc(r.name)}">${esc(r.name)}${r.notes?`<small>${esc(r.notes)}</small>`:''}</td>
+      <td><span class="tag tag-country">${esc(r.country||'—')}</span></td>
+      <td>${r.website?`<span class="tag tag-source">${esc(r.website)}</span>`:'<span style="color:var(--muted)">—</span>'}</td>
+      <td>${r.specification?`<span class="tag ${isNV?'tag-nonveg':'tag-spec'}">${esc(r.specification)}</span>`:'<span style="color:var(--muted)">—</span>'}</td>
+      <td style="font-weight:600;font-size:12px">${esc(r.dose||'—')}</td>
+      <td><div style="display:flex;flex-direction:column;gap:3px">${vHTML}<button class="verify-btn" onclick="markVerified(${r.id})">✓ Verify</button></div></td>
+      <td>${lHTML}</td>
+      <td><div class="row-acts">
+        <button class="act-btn" onclick="openSlide(${r.id})">View</button>
+        <button class="act-btn" onclick="openEdit(${r.id})">Edit</button>
+        <button class="act-btn del" onclick="askDel(${r.id},'${esc(r.name)}')">Del</button>
+      </div></td>
+    </tr>`;
+  }).join('')}</tbody></table></div>`;
+}
+
+// ── CARDS ─────────────────────────────────────────────────────────
+function renderCards(rows){
+  const el=document.getElementById('content');
+  if(!rows.length){el.innerHTML='<div class="empty-wrap">No supplements match.</div>';return;}
+  el.innerHTML=`<div class="cards-grid">${rows.map(r=>{
+    const ok=r.in_stock!==false,isNV=/non-veg|bovine|marine/i.test(r.specification||'');
+    const lBtns=r.link?`<a class="lbtn lbtn-open" href="${esc(r.link)}" target="_blank" rel="noopener">Open</a><button class="lbtn lbtn-copy" onclick="copyLink(this,'${esc(r.link)}')">Copy</button>`:`<span style="color:var(--muted);font-size:11px">No link</span>`;
+    return`<div class="card${ok?'':' oos'}">
+      <div class="card-top">
+        <div><div class="card-name">${esc(r.name)}</div><div class="card-tags"><span class="tag tag-country">${esc(r.country||'—')}</span>${r.specification?`<span class="tag ${isNV?'tag-nonveg':'tag-spec'}">${esc(r.specification)}</span>`:''}</div></div>
+        <button class="avail-pill ${ok?'in':'out'}" onclick="toggleStock(${r.id},${ok})">${ok?'✓':'✕'}</button>
+      </div>
+      ${r.dose||r.website?`<div style="font-size:12px;color:var(--muted)">${esc(r.website||'')}${r.website&&r.dose?' · ':''}${esc(r.dose||'')}</div>`:''}
+      <div class="card-actions">${lBtns}</div>
+      <div class="row-acts"><button class="act-btn" onclick="openSlide(${r.id})">View</button><button class="act-btn" onclick="openEdit(${r.id})">Edit</button><button class="act-btn del" onclick="askDel(${r.id},'${esc(r.name)}')">Del</button></div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+// ── VERIFY HTML ───────────────────────────────────────────────────
+function verifyHTML(lv,today){
+  if(!lv)return`<span class="vdate" style="font-style:italic">Never</span>`;
+  const d=new Date(lv),diff=Math.floor((today-d)/86400000),label=d.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  if(diff<=30)return`<span class="vdate fresh">${label}</span>`;
+  if(diff<=90)return`<span class="vdate">${label}</span>`;
+  return`<span class="vdate stale">⚠ ${label}</span>`;
+}
+
+// ── SUGGESTIONS VIEW ──────────────────────────────────────────────
+async function showSuggestions(){
+  const {data,error}=await db.from('suggestions').select('*').eq('reviewed',false).order('created_at',{ascending:false});
+  const el=document.getElementById('content');
+  if(error){el.innerHTML=`<div class="empty-wrap" style="color:var(--warn)">Failed to load suggestions.</div>`;return;}
+  const rows=data||[];
+  document.getElementById('suggBtn').classList.add('active');
+  if(!rows.length){
+    el.innerHTML=`<div class="sugg-panel"><div class="sugg-title">User Suggestions</div><div class="sugg-empty">No pending suggestions. All clear ✓</div></div>`;
+    return;
+  }
+  el.innerHTML=`<div class="sugg-panel">
+    <div class="sugg-title">User Suggestions <span style="font-size:14px;font-weight:400;color:var(--muted)">(${rows.length} pending)</span></div>
+    ${rows.map(s=>`<div class="sugg-card" id="sc-${s.id}">
+      <div class="sugg-info">
+        <div class="sugg-name">${esc(s.supplement_name||'—')}</div>
+        <div class="sugg-meta">Country: ${esc(s.country||'—')} · Reported: Out of Stock · ${new Date(s.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</div>
+        ${s.suggested_link?`<div class="sugg-link">Suggested link: <a href="${esc(s.suggested_link)}" target="_blank" rel="noopener">${esc(s.suggested_link)}</a></div>`:'<div class="sugg-meta" style="margin-top:3px">No alternative link provided</div>'}
+        ${s.notes?`<div class="sugg-meta" style="margin-top:3px">Note: ${esc(s.notes)}</div>`:''}
+      </div>
+      <div class="sugg-acts">
+        <button class="act-btn del" onclick="dismissSugg(${s.id})">Dismiss</button>
+        ${s.suggested_link?`<button class="act-btn" onclick="applySugg(${s.supplement_id},'${esc(s.suggested_link)}',${s.id})">Apply Link</button>`:''}
+        <button class="act-btn" style="color:var(--warn);border-color:var(--warn)" onclick="markOOS(${s.supplement_id},${s.id})">Mark OOS</button>
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+
+async function dismissSugg(id){
+  const{error}=await db.from('suggestions').update({reviewed:true}).eq('id',id);
+  if(error){toast('Failed to dismiss.',true);return;}
+  document.getElementById('sc-'+id)?.remove();
+  toast('Dismissed.');
+  await updateBadge();
+  const remaining=document.querySelectorAll('[id^="sc-"]').length;
+  const titleEl=document.querySelector('.sugg-title');
+  if(titleEl)titleEl.innerHTML=remaining>0?`User Suggestions <span style="font-size:14px;font-weight:400;color:var(--muted)">(${remaining} pending)</span>`:`User Suggestions <span style="font-size:14px;font-weight:400;color:var(--muted)">(all clear ✓)</span>`;
+}
+async function applySugg(suppId,link,suggId){
+  const[r1,r2]=await Promise.all([
+    db.from('supplements').update({link,in_stock:true,last_verified:new Date().toISOString().split('T')[0]}).eq('id',suppId),
+    db.from('suggestions').update({reviewed:true}).eq('id',suggId)
+  ]);
+  if(r1.error||r2.error){toast('Update failed.',true);return;}
+  toast('Link applied & marked in stock!');
+  await refreshData();
+  await showSuggestions();
+}
+async function markOOS(suppId,suggId){
+  const[r1,r2]=await Promise.all([
+    db.from('supplements').update({in_stock:false}).eq('id',suppId),
+    db.from('suggestions').update({reviewed:true}).eq('id',suggId)
+  ]);
+  if(r1.error||r2.error){toast('Update failed.',true);return;}
+  toast('Marked out of stock.');
+  await refreshData();
+  await showSuggestions();
+}
+
+// ── SLIDE ─────────────────────────────────────────────────────────
+function openSlide(id){
+  const r=allData.find(x=>x.id===id);if(!r)return;
+  const today=new Date();today.setHours(0,0,0,0);
+  document.getElementById('spTitle').textContent=r.name;
+  document.getElementById('spBody').innerHTML=`
+    <div class="sp-row"><div class="sp-lbl">Country</div><div class="sp-val"><span class="tag tag-country">${esc(r.country||'—')}</span></div></div>
+    <div class="sp-row"><div class="sp-lbl">Specification</div><div class="sp-val">${r.specification?`<span class="tag tag-spec">${esc(r.specification)}</span>`:'—'}</div></div>
+    <div class="sp-row"><div class="sp-lbl">Source</div><div class="sp-val">${r.website?`<span class="tag tag-source">${esc(r.website)}</span>`:'—'}</div></div>
+    <div class="sp-row"><div class="sp-lbl">Dose</div><div class="sp-val" style="font-weight:600">${esc(r.dose||'—')}</div></div>
+    <div class="sp-row"><div class="sp-lbl">Availability</div><div class="sp-val">${r.in_stock!==false?'<span style="color:var(--accent);font-weight:600">✓ In Stock</span>':'<span style="color:var(--warn);font-weight:600">✕ Out of Stock</span>'}</div></div>
+    <div class="sp-row"><div class="sp-lbl">Last Verified</div><div class="sp-val">${verifyHTML(r.last_verified,today)}</div></div>
+    ${r.notes?`<div class="sp-row"><div class="sp-lbl">Notes</div><div class="sp-val" style="font-size:13px;color:var(--muted)">${esc(r.notes)}</div></div>`:''}
+    ${r.link?`<div class="sp-row"><div class="sp-lbl">Link</div><div class="sp-val" style="word-break:break-all;font-size:11.5px;color:var(--muted)">${esc(r.link)}</div></div>`:''}
+  `;
+  document.getElementById('spActions').innerHTML=r.link?`<a class="lbtn lbtn-open" style="padding:7px 14px;font-size:12.5px" href="${esc(r.link)}" target="_blank" rel="noopener">Open</a><button class="lbtn lbtn-copy" style="padding:7px 14px;font-size:12.5px" onclick="copyLink(this,'${esc(r.link)}')">Copy</button><button class="act-btn" style="margin-left:auto" onclick="closeSlide();openEdit(${r.id})">Edit</button>`:`<button class="act-btn" style="margin-left:auto" onclick="closeSlide();openEdit(${r.id})">Edit</button>`;
+  document.getElementById('slideOverlay').classList.add('open');
+  document.getElementById('slidePanel').classList.add('open');
+}
+function closeSlide(){document.getElementById('slideOverlay').classList.remove('open');document.getElementById('slidePanel').classList.remove('open');}
+
+// ── TOGGLE STOCK ──────────────────────────────────────────────────
+async function toggleStock(id,cur){
+  const{error}=await db.from('supplements').update({in_stock:!cur}).eq('id',id);
+  if(error){toast('Failed.',true);return;}
+  const r=allData.find(x=>x.id===id);if(r)r.in_stock=!cur;
+  toast(!cur?'Marked in stock.':'Marked out of stock.');filterData();
+}
+
+// ── MARK VERIFIED ─────────────────────────────────────────────────
+async function markVerified(id){
+  const today=new Date().toISOString().split('T')[0];
+  const{error}=await db.from('supplements').update({last_verified:today}).eq('id',id);
+  if(error){toast('Failed.',true);return;}
+  const r=allData.find(x=>x.id===id);if(r)r.last_verified=today;
+  toast('Verified ✓');filterData();
+}
+
+// ── COPY ──────────────────────────────────────────────────────────
+async function copyLink(btn,url){
+  try{await navigator.clipboard.writeText(url);const orig=btn.innerHTML;btn.classList.add('copied');btn.innerHTML='✓ Copied';setTimeout(()=>{btn.classList.remove('copied');btn.innerHTML=orig;},2200);}
+  catch{toast('Copy failed.',true);}
+}
+
+// ── DELETE ────────────────────────────────────────────────────────
+function askDel(id,name){deleteId=id;document.getElementById('delText').textContent=`"${name}" will be permanently removed.`;document.getElementById('delConfirm').classList.add('open');}
+function closeDelConfirm(){deleteId=null;document.getElementById('delConfirm').classList.remove('open');}
+async function confirmDelete(){
+  if(!deleteId)return;
+  const{error}=await db.from('supplements').delete().eq('id',deleteId);
+  closeDelConfirm();
+  if(error){toast('Delete failed.',true);return;}
+  toast('Deleted.');await refresh();
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────
+function openModal(){editId=null;document.getElementById('modalTitle').textContent='Add Supplement';document.getElementById('saveBtn').textContent='Save';['fName','fCountry','fSpec','fWeb','fDose','fLink','fNotes','fVerified'].forEach(id=>document.getElementById(id).value='');document.getElementById('fStock').checked=true;document.getElementById('dupWarn').classList.remove('show');document.getElementById('modalOverlay').classList.add('open');setTimeout(()=>document.getElementById('fName').focus(),80);}
+function openEdit(id){const r=allData.find(x=>x.id===id);if(!r)return;editId=id;document.getElementById('modalTitle').textContent='Edit Supplement';document.getElementById('saveBtn').textContent='Update';document.getElementById('fName').value=r.name||'';document.getElementById('fCountry').value=r.country||'';document.getElementById('fSpec').value=r.specification||'';document.getElementById('fWeb').value=r.website||'';document.getElementById('fDose').value=r.dose||'';document.getElementById('fLink').value=r.link||'';document.getElementById('fNotes').value=r.notes||'';document.getElementById('fVerified').value=r.last_verified||'';document.getElementById('fStock').checked=r.in_stock!==false;document.getElementById('dupWarn').classList.remove('show');document.getElementById('modalOverlay').classList.add('open');}
+function closeModal(){document.getElementById('modalOverlay').classList.remove('open');}
+function handleOverlay(e){if(e.target===document.getElementById('modalOverlay'))closeModal();}
+function checkDup(){const n=norm(document.getElementById('fName').value),c=norm(document.getElementById('fCountry').value);if(!n){document.getElementById('dupWarn').classList.remove('show');return;}const dup=allData.some(r=>r.id!==editId&&norm(r.name)===n&&(!c||norm(r.country)===c));document.getElementById('dupWarn').classList.toggle('show',dup);}
+
+// ── SAVE ──────────────────────────────────────────────────────────
+async function save(){
+  const p={name:document.getElementById('fName').value.trim(),country:document.getElementById('fCountry').value.trim(),specification:document.getElementById('fSpec').value.trim(),website:document.getElementById('fWeb').value.trim(),dose:document.getElementById('fDose').value.trim(),link:document.getElementById('fLink').value.trim(),notes:document.getElementById('fNotes').value.trim(),last_verified:document.getElementById('fVerified').value||null,in_stock:document.getElementById('fStock').checked};
+  if(!p.name||!p.country){toast('Name and Country required.',true);return;}
+  const{error}=editId?await db.from('supplements').update(p).eq('id',editId):await db.from('supplements').insert([p]);
+  if(error){toast('Save failed: '+error.message,true);return;}
+  toast(editId?'Updated!':'Added!');closeModal();await refresh();
+}
+
+// ── UPDATE BADGE ─────────────────────────────────────────────────
+async function updateBadge(){
+  const{data}=await db.from('suggestions').select('id').eq('reviewed',false);
+  const n=(data||[]).length;
+  const badge=document.getElementById('suggBadge');
+  if(n>0){badge.textContent=n;badge.style.display='inline-flex';}
+  else badge.style.display='none';
+}
+
+// ── REFRESH DATA ONLY ─────────────────────────────────────────────
+async function refreshData(){
+  const{data}=await db.from('supplements').select('*').order('name');
+  allData=data||[];
+  const saves=['nameFilter','countryFilter','sourceFilter','specFilter'].map(id=>document.getElementById(id).value);
+  populateFilters();
+  ['nameFilter','countryFilter','sourceFilter','specFilter'].forEach((id,i)=>document.getElementById(id).value=saves[i]);
+  await updateBadge();
+}
+
+// ── REFRESH ───────────────────────────────────────────────────────
+async function refresh(){
+  const{data}=await db.from('supplements').select('*').order('name');
+  allData=data||[];
+  const saves=['nameFilter','countryFilter','sourceFilter','specFilter'].map(id=>document.getElementById(id).value);
+  populateFilters();
+  ['nameFilter','countryFilter','sourceFilter','specFilter'].forEach((id,i)=>document.getElementById(id).value=saves[i]);
+  filterData();
+  await updateBadge();
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────
+function exportCSV(){
+  const h=['name','country','specification','website','dose','link','in_stock','last_verified','notes'];
+  const rows=[h.join(','),...allData.map(r=>h.map(k=>`"${(r[k]===null||r[k]===undefined?'':r[k]).toString().replace(/"/g,'""')}"`).join(','))];
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'}));a.download='supplements_admin.csv';a.click();
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function toast(msg,err=false){const t=document.getElementById('toast');t.textContent=msg;t.className='show'+(err?' err':'');setTimeout(()=>t.className='',3000);}
+
+if(sessionStorage.getItem('admin_auth')==='1') init();
+</script>
+</body>
+</html>
