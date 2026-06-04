@@ -122,7 +122,7 @@ td.ctr{text-align:center;}
 .tag-nonveg{background:var(--warn-l);color:var(--warn);}
 .tag-oos{background:var(--warn-l);color:var(--warn);border:1px solid #f5c2b0;}
 
-/* ── STATUS ICON (read-only) ── */
+/* ── STATUS ICON ── */
 .status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;display:inline-block;}
 .status-dot.in{background:#5aab82;}
 .status-dot.out{background:var(--warn);}
@@ -136,7 +136,7 @@ td.ctr{text-align:center;}
 .lbtn-copy:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-l);}
 .lbtn-copy.copied{background:var(--accent-l);border-color:var(--accent);color:var(--accent-d);}
 
-/* ── REPORT BUTTON in table ── */
+/* ── REPORT BUTTON ── */
 .report-btn{display:inline-flex;align-items:center;gap:3px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;padding:4px 8px;border-radius:6px;border:1.5px solid #f5c2b0;background:var(--warn-l);color:var(--warn);cursor:pointer;transition:all .14s;white-space:nowrap;}
 .report-btn:hover{background:var(--warn);color:#fff;border-color:var(--warn);}
 .report-btn.reported{background:#f0f0f0;border-color:#ccc;color:#aaa;cursor:default;}
@@ -157,16 +157,7 @@ td.ctr{text-align:center;}
 .sp-val{font-size:13.5px;color:var(--text);font-weight:500;}
 .sp-actions{display:flex;gap:7px;padding:14px 20px;border-top:1px solid var(--border);flex-wrap:wrap;}
 
-/* ── REPORT FORM (inside slide) ── */
-.report-form{display:none;background:var(--warn-l);border:1px solid #f5c2b0;border-radius:10px;padding:14px;margin-top:6px;}
-.report-form.open{display:block;}
-.report-form h4{font-size:13px;font-weight:600;color:var(--warn);margin-bottom:10px;}
-.rf-label{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px;display:block;}
-.rf-input{width:100%;padding:8px 11px;border:1.5px solid var(--border);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:13px;background:var(--surface);color:var(--text);outline:none;margin-bottom:10px;transition:border-color .15s;}
-.rf-input:focus{border-color:var(--warn);}
-.rf-actions{display:flex;gap:7px;justify-content:flex-end;}
-
-/* ── MODAL for report ── */
+/* ── MODALS ── */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(10,8,6,.55);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
 .modal-overlay.open{display:flex;}
 .modal{background:var(--surface);border-radius:16px;padding:24px;width:100%;max-width:440px;box-shadow:var(--shadow-lg);animation:fadeUp .2s ease;transition:background .25s;}
@@ -185,13 +176,41 @@ td.ctr{text-align:center;}
 #toast.show{transform:translateY(0);opacity:1;}
 #toast.err{background:var(--warn);}
 
-@media(max-width:860px){.app-shell{flex-direction:column;}.left-panel{width:100%;min-width:unset;max-height:230px;}.slide-panel{width:100%;}table{display:block;overflow-x:auto;}}
+/* ── MOBILE ── */
+@media(max-width:860px){
+  html,body{height:100%;overflow:hidden;}
+  .app-shell{flex-direction:column;height:100vh;overflow:hidden;}
+  .left-panel{width:100%;min-width:unset;flex-shrink:0;max-height:52px;overflow:hidden;transition:max-height .3s ease;position:relative;z-index:20;}
+  .left-panel.expanded{ max-height:85vh; overflow-y:auto; }
+  .filter-toggle-btn{display:flex;align-items:center;justify-content:space-between;width:100%;padding:14px 20px;background:transparent;border:none;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;flex-shrink:0;}
+  .filter-toggle-btn svg{transition:transform .25s;}
+  .left-panel.expanded .filter-toggle-btn svg{transform:rotate(180deg);}
+  .left-top{ display:none; }
+  .right-panel{flex:1;overflow:hidden;display:flex;flex-direction:column;min-height:0;}
+  .content{flex:1;overflow-y:auto;padding:12px 14px 40px;-webkit-overflow-scrolling:touch;}
+  .slide-panel{width:100%;}
+  table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .cards-grid{grid-template-columns:1fr;}
+  .toolbar{padding:8px 14px;flex-wrap:wrap;gap:7px;}
+  .stats-bar{padding:6px 14px;}
+  .lbtn{padding:7px 12px;font-size:12px;}
+  .report-btn{padding:7px 10px;}
+  .left-filters{padding:10px 18px 16px;}
+  .left-footer{padding:8px 18px;}
+}
+@media(min-width:861px){ .filter-toggle-btn{display:none;} }
 </style>
 </head>
 <body>
 <div class="app-shell">
-<!-- ── LEFT ── -->
-<aside class="left-panel">
+<aside class="left-panel" id="leftPanel">
+  <button class="filter-toggle-btn" onclick="toggleFilters()" aria-label="Toggle filters">
+    <span>
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="vertical-align:middle;margin-right:7px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      Filters &amp; Search
+    </span>
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+  </button>
   <div class="left-top">
     <div class="app-label">Reference</div>
     <h1>Supplement<br>Repository</h1>
@@ -233,13 +252,16 @@ td.ctr{text-align:center;}
       <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       Clear filters
     </button>
+
+    <div style="margin-top:16px; padding-top:16px; border-top:1px solid rgba(255,255,255,.08);">
+      <button class="btn btn-submit" style="width:100%; justify-content:center; padding:10px; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.3);" onclick="openNewSugg()">+ Suggest New Supplement</button>
+    </div>
   </div>
   <div class="left-footer">
     <span class="result-count" id="resultCount"></span>
   </div>
 </aside>
 
-<!-- ── RIGHT ── -->
 <div class="right-panel">
   <div class="toolbar">
     <div class="view-toggle">
@@ -266,7 +288,6 @@ td.ctr{text-align:center;}
 </div>
 </div>
 
-<!-- ── SLIDE PANEL ── -->
 <div class="slide-overlay" id="slideOverlay" onclick="closeSlide()"></div>
 <div class="slide-panel" id="slidePanel">
   <div class="sp-header">
@@ -277,11 +298,10 @@ td.ctr{text-align:center;}
   <div class="sp-actions" id="spActions"></div>
 </div>
 
-<!-- ── REPORT MODAL ── -->
 <div class="modal-overlay" id="reportModal" onclick="handleReportOverlay(event)">
   <div class="modal">
-    <h2>Report Out of Stock</h2>
-    <div class="modal-sub" id="reportSub">Let us know this supplement is unavailable. You can optionally suggest an alternative link.</div>
+    <h2>Report / Suggest Link</h2>
+    <div class="modal-sub" id="reportSub">Let us know if this supplement has an issue (like out of stock), or suggest an alternative link below.</div>
     <div class="field">
       <label>Alternative Link <span class="optional-note">(optional — paste a better link if you found one)</span></label>
       <input id="rLink" type="url" placeholder="https://…"/>
@@ -292,7 +312,34 @@ td.ctr{text-align:center;}
     </div>
     <div class="modal-footer">
       <button class="btn btn-cancel" onclick="closeReport()">Cancel</button>
-      <button class="btn btn-submit" onclick="submitReport()">Submit Report</button>
+      <button class="btn btn-submit" onclick="submitReport()">Submit</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="newSuggModal" onclick="handleNewSuggOverlay(event)">
+  <div class="modal">
+    <h2>Suggest New Supplement</h2>
+    <div class="modal-sub">Know a good supplement we should add to the repository? Fill out the details below.</div>
+    <div class="field">
+      <label>Supplement Name *</label>
+      <input id="nsName" type="text" placeholder="e.g. Magnesium Glycinate"/>
+    </div>
+    <div class="field">
+      <label>Country</label>
+      <input id="nsCountry" type="text" placeholder="e.g. India"/>
+    </div>
+    <div class="field">
+      <label>Link / Source Website</label>
+      <input id="nsLink" type="url" placeholder="https://..."/>
+    </div>
+    <div class="field">
+      <label>Additional Notes (Dose, Specs, etc.)</label>
+      <textarea id="nsNote" placeholder="e.g. 500mg, great for sleep..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-cancel" onclick="closeNewSugg()">Cancel</button>
+      <button class="btn btn-submit" onclick="submitNewSugg()">Submit Suggestion</button>
     </div>
   </div>
 </div>
@@ -310,17 +357,22 @@ let avFilter  = 'all';
 let viewMode  = 'table';
 let darkMode  = localStorage.getItem('dark_fe') === '1';
 let reportId  = null; // supplement id being reported
-let reported  = new Set(); // track reports this page load only — resets on refresh
+let reported  = new Set(JSON.parse(sessionStorage.getItem('reported')||'[]')); // track reported this session
 
 if (darkMode) document.documentElement.setAttribute('data-theme','dark');
 function toggleDark(){darkMode=!darkMode;document.documentElement.setAttribute('data-theme',darkMode?'dark':'light');localStorage.setItem('dark_fe',darkMode?'1':'0');document.getElementById('darkBtn').classList.toggle('active',darkMode);}
 
 document.addEventListener('keydown',e=>{
   if(e.key==='/'&&!['INPUT','TEXTAREA'].includes(document.activeElement.tagName)){e.preventDefault();document.getElementById('searchInput').focus();}
-  if(e.key==='Escape'){closeSlide();closeReport();}
+  if(e.key==='Escape'){closeSlide();closeReport();closeNewSugg();}
 });
 
 function norm(s){return(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
+
+function toggleFilters(){
+  const panel=document.getElementById('leftPanel');
+  panel.classList.toggle('expanded');
+}
 
 // ── INIT ─────────────────────────────────────────────────────────
 async function init(){
@@ -366,20 +418,17 @@ function renderTable(rows){
   <colgroup><col class="c0"><col class="c1"><col class="c2"><col class="c3"><col class="c4"><col class="c5"><col class="c6"><col class="c7"></colgroup>
   <thead><tr>
     <th class="ctr">Stock</th><th>Supplement</th><th>Country</th>
-    <th>Source</th><th>Specification</th><th>Dose</th><th>Link</th><th>Report</th>
+    <th>Source</th><th>Specification</th><th>Dose</th><th>Link</th><th>Action</th>
   </tr></thead>
   <tbody>${rows.map(r=>{
     const ok=r.in_stock!==false,isNV=/non-veg|bovine|marine/i.test(r.specification||'');
     const alreadyReported=reported.has(r.id);
-    const lHTML=r.link?`<div class="link-acts"><a class="lbtn lbtn-open" href="${esc(r.link)}" target="_blank" rel="noopener">Open</a><button class="lbtn lbtn-copy" onclick="copyLink(this,'${esc(r.link)}')">Copy</button></div>`:`<span style="color:var(--muted);font-size:11px">—</span>`;
-    // If DB already says OOS — show that state, no need to report
-    // If user reported this session — show reported state
-    // Otherwise — show report button
-    // If user reported this session — show reported state
-    // Otherwise — show button (text changes based on if it's already OOS)
-    const reportHTML= alreadyReported
-        ? `<button class="report-btn reported" disabled>✓ Sent</button>`
-        : `<button class="report-btn" onclick="openReport(${r.id},'${esc(r.name)}','${esc(r.country)}')" title="Suggest a link or report OOS">${!ok ? 'Suggest Link' : 'Out of Stock?'}</button>`;
+    const lHTML=r.link?`<div class="link-acts"><a class="lbtn lbtn-open" href="${esc(r.link)}" target="_blank" rel="noopener">Open</a><button class="lbtn lbtn-copy" onclick="copyLink(this,'${esc(r.link)}',${r.id})">Copy</button></div>`:`<span style="color:var(--muted);font-size:11px">—</span>`;
+    
+    const reportHTML=alreadyReported
+      ?`<button class="report-btn reported" disabled>✓ Sent</button>`
+      :`<button class="report-btn" onclick="openReport(${r.id},'${esc(r.name)}','${esc(r.country)}')" title="Report issue or suggest link">Report</button>`;
+      
     return`<tr class="${ok?'':'oos'}">
       <td class="ctr"><span class="status-dot ${ok?'in':'out'}" title="${ok?'In stock':'Out of stock'}"></span></td>
       <td class="name-cell" title="${esc(r.name)}">${esc(r.name)}${r.notes?`<small>${esc(r.notes)}</small>`:''}</td>
@@ -400,7 +449,8 @@ function renderCards(rows){
   el.innerHTML=`<div class="cards-grid">${rows.map(r=>{
     const ok=r.in_stock!==false,isNV=/non-veg|bovine|marine/i.test(r.specification||'');
     const alreadyReported=reported.has(r.id);
-    const lBtns=r.link?`<a class="lbtn lbtn-open" href="${esc(r.link)}" target="_blank" rel="noopener">Open</a><button class="lbtn lbtn-copy" onclick="event.stopPropagation();copyLink(this,'${esc(r.link)}')">Copy</button>`:`<span style="color:var(--muted);font-size:11px">No link</span>`;
+    const lBtns=r.link?`<a class="lbtn lbtn-open" href="${esc(r.link)}" target="_blank" rel="noopener">Open</a><button class="lbtn lbtn-copy" onclick="event.stopPropagation();copyLink(this,'${esc(r.link)}',${r.id})">Copy</button>`:`<span style="color:var(--muted);font-size:11px">No link</span>`;
+    
     return`<div class="card${ok?'':' oos'}" onclick="openSlide(${r.id})">
       <div class="card-top">
         <div><div class="card-name">${esc(r.name)}</div><div class="card-tags"><span class="tag tag-country">${esc(r.country||'—')}</span>${r.specification?`<span class="tag ${isNV?'tag-nonveg':'tag-spec'}">${esc(r.specification)}</span>`:''}</div></div>
@@ -410,8 +460,8 @@ function renderCards(rows){
       <div class="card-actions" onclick="event.stopPropagation()">${lBtns}</div>
       <div onclick="event.stopPropagation()">
         ${alreadyReported
-            ? `<button class="report-btn reported" disabled style="font-size:11px;margin-top:2px">✓ Sent</button>`
-            : `<button class="report-btn" style="font-size:11px;margin-top:2px" onclick="openReport(${r.id},'${esc(r.name)}','${esc(r.country)}')">${!ok ? 'Suggest Link' : 'Report Out of Stock'}</button>`}
+          ?`<button class="report-btn reported" disabled style="font-size:11px;margin-top:2px">✓ Sent</button>`
+          :`<button class="report-btn" style="font-size:11px;margin-top:2px" onclick="openReport(${r.id},'${esc(r.name)}','${esc(r.country)}')">Report</button>`}
       </div>
     </div>`;
   }).join('')}</div>`;
@@ -432,21 +482,21 @@ function openSlide(id){
     ${r.notes?`<div class="sp-row"><div class="sp-lbl">Notes</div><div class="sp-val" style="font-size:13px;color:var(--muted)">${esc(r.notes)}</div></div>`:''}
     ${r.link?`<div class="sp-row"><div class="sp-lbl">Link</div><div class="sp-val" style="word-break:break-all;font-size:11.5px;color:var(--muted)">${esc(r.link)}</div></div>`:''}
   `;
- document.getElementById('spActions').innerHTML=`
-    ${r.link?`<a class="lbtn lbtn-open" style="padding:7px 14px;font-size:12.5px" href="${esc(r.link)}" target="_blank" rel="noopener">Open</a><button class="lbtn lbtn-copy" style="padding:7px 14px;font-size:12.5px" onclick="copyLink(this,'${esc(r.link)}')">Copy</button>`:''}
+  document.getElementById('spActions').innerHTML=`
+    ${r.link?`<a class="lbtn lbtn-open" style="padding:7px 14px;font-size:12.5px" href="${esc(r.link)}" target="_blank" rel="noopener">Open</a><button class="lbtn lbtn-copy" style="padding:7px 14px;font-size:12.5px" onclick="copyLink(this,'${esc(r.link)}',${r.id})">Copy</button>`:''}
     ${alreadyReported
-        ? `<button class="report-btn reported" disabled style="margin-left:auto">✓ Sent</button>`
-        : `<button class="report-btn" style="margin-left:auto" onclick="closeSlide();openReport(${r.id},'${esc(r.name)}','${esc(r.country)}')">${!ok ? 'Suggest Alternative Link' : 'Report Out of Stock'}</button>`}
+      ?`<button class="report-btn reported" disabled style="margin-left:auto">✓ Sent</button>`
+      :`<button class="report-btn" style="margin-left:auto" onclick="closeSlide();openReport(${r.id},'${esc(r.name)}','${esc(r.country)}')">Report</button>`}
   `;
   document.getElementById('slideOverlay').classList.add('open');
   document.getElementById('slidePanel').classList.add('open');
 }
 function closeSlide(){document.getElementById('slideOverlay').classList.remove('open');document.getElementById('slidePanel').classList.remove('open');}
 
-// ── REPORT ────────────────────────────────────────────────────────
+// ── REPORT MODAL ──────────────────────────────────────────────────
 function openReport(id,name,country){
   reportId=id;
-  document.getElementById('reportSub').textContent=`Reporting "${name}" (${country}) as out of stock. You can optionally paste a better link below.`;
+  document.getElementById('reportSub').textContent=`Reporting "${name}" (${country}). You can optionally paste a better link below.`;
   document.getElementById('rLink').value='';
   document.getElementById('rNote').value='';
   document.getElementById('reportModal').classList.add('open');
@@ -472,17 +522,68 @@ async function submitReport(){
   }]);
   if(error){toast('Failed to submit. Please try again.',true);return;}
   reported.add(reportId);
+  sessionStorage.setItem('reported',JSON.stringify([...reported]));
   closeReport();
   toast('Report submitted — thank you!');
-  // Refresh data from DB so if admin already acted, it shows correctly
-  const{data:fresh}=await db.from('supplements').select('*').order('name');
-  if(fresh) allData=fresh;
-  filterData();
+  filterData(); 
+}
+
+// ── NEW SUGGESTION MODAL ──────────────────────────────────────────
+function openNewSugg(){
+  document.getElementById('nsName').value='';
+  document.getElementById('nsCountry').value='';
+  document.getElementById('nsLink').value='';
+  document.getElementById('nsNote').value='';
+  document.getElementById('newSuggModal').classList.add('open');
+  setTimeout(()=>document.getElementById('nsName').focus(),80);
+}
+function closeNewSugg(){document.getElementById('newSuggModal').classList.remove('open');}
+function handleNewSuggOverlay(e){if(e.target===document.getElementById('newSuggModal'))closeNewSugg();}
+
+async function submitNewSugg(){
+  const name = document.getElementById('nsName').value.trim();
+  if(!name){ toast('Supplement Name is required.', true); return; }
+  
+  const country = document.getElementById('nsCountry').value.trim();
+  const link = document.getElementById('nsLink').value.trim();
+  const notes = document.getElementById('nsNote').value.trim();
+  
+  // Add a clear tag so the admin knows this is a completely new suggestion
+  const finalNotes = "NEW SUPPLEMENT SUGGESTION\n" + notes;
+
+  const {error} = await db.from('suggestions').insert([{
+    supplement_name: name,
+    country: country,
+    suggested_link: link,
+    notes: finalNotes,
+    reported_out_of_stock: false,
+    reviewed: false
+  }]);
+
+  if(error){ toast('Failed to submit. Please try again.', true); return; }
+  closeNewSugg();
+  toast('Suggestion sent! Thank you.');
 }
 
 // ── COPY ─────────────────────────────────────────────────────────
-async function copyLink(btn,url){
-  try{await navigator.clipboard.writeText(url);const orig=btn.innerHTML;btn.classList.add('copied');btn.innerHTML='✓ Copied';setTimeout(()=>{btn.classList.remove('copied');btn.innerHTML=orig;},2200);}
+async function copyLink(btn, url, id){
+  const r = id ? allData.find(x=>x.id===id) : null;
+  let textToCopy = url; 
+  if(r){
+    const lines = [];
+    if(r.name)    lines.push('Supplement : ' + r.name);
+    if(r.website) lines.push('Source     : ' + r.website);
+    if(url)       lines.push('Link       : ' + url);
+    textToCopy = lines.join('\n');
+  }
+  try{
+    await navigator.clipboard.writeText(textToCopy);
+    const orig=btn.innerHTML;
+    btn.classList.add('copied');
+    btn.innerHTML='✓ Copied';
+    setTimeout(()=>{btn.classList.remove('copied');btn.innerHTML=orig;},2200);
+    toast('Copied!');
+  }
   catch{toast('Copy failed.',true);}
 }
 
