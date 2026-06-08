@@ -377,7 +377,9 @@ let avFilter  = 'all';
 let viewMode  = 'table';
 let darkMode  = localStorage.getItem('dark_fe') === '1';
 let reportId  = null; 
-let reported  = new Set(JSON.parse(sessionStorage.getItem('reported')||'[]')); 
+
+// NEW: We will store live database states here instead of browser session storage
+let pendingReports = new Set(); 
 
 if (darkMode) document.documentElement.setAttribute('data-theme','dark');
 function toggleDark(){darkMode=!darkMode;document.documentElement.setAttribute('data-theme',darkMode?'dark':'light');localStorage.setItem('dark_fe',darkMode?'1':'0');document.getElementById('darkBtn').classList.toggle('active',darkMode);}
@@ -396,10 +398,16 @@ function toggleFilters(){
 
 // ── INIT ─────────────────────────────────────────────────────────
 async function init(){
-  const{data,error}=await db.from('supplements').select('*').order('name');
+  // Fetch supplements
+  const {data: suppData, error} = await db.from('supplements').select('*').order('name');
   if(error){document.getElementById('content').innerHTML=`<div class="loading-wrap"><p style="color:var(--warn)">Failed to load. Please refresh.</p></div>`;return;}
-  allData=data||[];
-  populateFilters();filterData();
+  
+  // NEW: Fetch all active/unreviewed suggestions from the database directly
+  const {data: suggData} = await db.from('suggestions').select('supplement_id').eq('reviewed', false);
+  pendingReports = new Set((suggData || []).map(s => s.supplement_id));
+
+  allData = suppData || [];
+  populateFilters(); filterData();
 }
 
 // ── FILTERS ──────────────────────────────────────────────────────
@@ -442,7 +450,7 @@ function renderTable(rows){
   </tr></thead>
   <tbody>${rows.map(r=>{
     const ok=r.in_stock!==false,isNV=/non-veg|bovine|marine/i.test(r.specification||'');
-    const alreadyReported=reported.has(r.id);
+    const alreadyReported = pendingReports.has(r.id); // NEW: Checks database state
     const lHTML=r.link?`<div class="link-acts"><a class="lbtn lbtn-open" href="${esc(r.link)}" target="_blank" rel="noopener">Open</a><button class="lbtn lbtn-copy" onclick="copyLink(this,'${esc(r.link)}',${r.id})">Copy</button></div>`:`<span style="color:var(--muted);font-size:11px">—</span>`;
     
     const reportHTML=alreadyReported
@@ -468,7 +476,7 @@ function renderCards(rows){
   if(!rows.length){el.innerHTML='<div class="empty-wrap">No supplements match.</div>';return;}
   el.innerHTML=`<div class="cards-grid">${rows.map(r=>{
     const ok=r.in_stock!==false,isNV=/non-veg|bovine|marine/i.test(r.specification||'');
-    const alreadyReported=reported.has(r.id);
+    const alreadyReported = pendingReports.has(r.id); // NEW: Checks database state
     const lBtns=r.link?`<a class="lbtn lbtn-open" href="${esc(r.link)}" target="_blank" rel="noopener">Open</a><button class="lbtn lbtn-copy" onclick="event.stopPropagation();copyLink(this,'${esc(r.link)}',${r.id})">Copy</button>`:`<span style="color:var(--muted);font-size:11px">No link</span>`;
     
     return`<div class="card${ok?'':' oos'}" onclick="openSlide(${r.id})">
@@ -491,7 +499,7 @@ function renderCards(rows){
 function openSlide(id){
   const r=allData.find(x=>x.id===id);if(!r)return;
   const ok=r.in_stock!==false;
-  const alreadyReported=reported.has(r.id);
+  const alreadyReported = pendingReports.has(r.id); // NEW: Checks database state
   document.getElementById('spTitle').innerHTML=esc(r.name)+(r.is_prescription?' <span class="rx-badge" style="font-size:11px;vertical-align:middle">Rx</span>':'');
   document.getElementById('spBody').innerHTML=`
     <div class="sp-row"><div class="sp-lbl">Country</div><div class="sp-val"><span class="tag tag-country">${esc(r.country||'—')}</span></div></div>
@@ -543,8 +551,10 @@ async function submitReport(){
     is_prescription: r.is_prescription || false
   }]);
   if(error){toast('Failed to submit. Please try again.',true);return;}
-  reported.add(reportId);
-  sessionStorage.setItem('reported',JSON.stringify([...reported]));
+  
+  // NEW: Update live memory 
+  pendingReports.add(reportId);
+  
   closeReport();
   toast('Report submitted — thank you!');
   filterData(); 
