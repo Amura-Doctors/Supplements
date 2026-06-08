@@ -122,7 +122,18 @@ td.ctr{text-align:center;}
 .tag-nonveg{background:var(--warn-l);color:var(--warn);}
 .tag-oos{background:var(--warn-l);color:var(--warn);border:1px solid #f5c2b0;}
 
-/* ── STATUS ICON ── */
+/* ── PRESCRIPTION BADGE ── */
+.rx-badge{
+  display:inline-flex;align-items:center;gap:3px;
+  background:#1a1a2e;color:#e8c84a;
+  border:1px solid #e8c84a44;
+  border-radius:4px;font-size:9.5px;font-weight:700;
+  padding:1px 6px;letter-spacing:.4px;text-transform:uppercase;
+  flex-shrink:0;cursor:default;
+}
+tbody tr.rx-row td:first-child{ border-left:3px solid #e8c84a; }
+
+/* ── STATUS ICON (read-only) ── */
 .status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;display:inline-block;}
 .status-dot.in{background:#5aab82;}
 .status-dot.out{background:var(--warn);}
@@ -136,7 +147,7 @@ td.ctr{text-align:center;}
 .lbtn-copy:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-l);}
 .lbtn-copy.copied{background:var(--accent-l);border-color:var(--accent);color:var(--accent-d);}
 
-/* ── REPORT BUTTON ── */
+/* ── REPORT BUTTON in table ── */
 .report-btn{display:inline-flex;align-items:center;gap:3px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;padding:4px 8px;border-radius:6px;border:1.5px solid #f5c2b0;background:var(--warn-l);color:var(--warn);cursor:pointer;transition:all .14s;white-space:nowrap;}
 .report-btn:hover{background:var(--warn);color:#fff;border-color:var(--warn);}
 .report-btn.reported{background:#f0f0f0;border-color:#ccc;color:#aaa;cursor:default;}
@@ -156,6 +167,15 @@ td.ctr{text-align:center;}
 .sp-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);}
 .sp-val{font-size:13.5px;color:var(--text);font-weight:500;}
 .sp-actions{display:flex;gap:7px;padding:14px 20px;border-top:1px solid var(--border);flex-wrap:wrap;}
+
+/* ── REPORT FORM (inside slide) ── */
+.report-form{display:none;background:var(--warn-l);border:1px solid #f5c2b0;border-radius:10px;padding:14px;margin-top:6px;}
+.report-form.open{display:block;}
+.report-form h4{font-size:13px;font-weight:600;color:var(--warn);margin-bottom:10px;}
+.rf-label{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:4px;display:block;}
+.rf-input{width:100%;padding:8px 11px;border:1.5px solid var(--border);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:13px;background:var(--surface);color:var(--text);outline:none;margin-bottom:10px;transition:border-color .15s;}
+.rf-input:focus{border-color:var(--warn);}
+.rf-actions{display:flex;gap:7px;justify-content:flex-end;}
 
 /* ── MODALS ── */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(10,8,6,.55);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
@@ -356,8 +376,8 @@ let allData   = [];
 let avFilter  = 'all';
 let viewMode  = 'table';
 let darkMode  = localStorage.getItem('dark_fe') === '1';
-let reportId  = null; // supplement id being reported
-let reported  = new Set(JSON.parse(sessionStorage.getItem('reported')||'[]')); // track reported this session
+let reportId  = null; 
+let reported  = new Set(JSON.parse(sessionStorage.getItem('reported')||'[]')); 
 
 if (darkMode) document.documentElement.setAttribute('data-theme','dark');
 function toggleDark(){darkMode=!darkMode;document.documentElement.setAttribute('data-theme',darkMode?'dark':'light');localStorage.setItem('dark_fe',darkMode?'1':'0');document.getElementById('darkBtn').classList.toggle('active',darkMode);}
@@ -429,9 +449,9 @@ function renderTable(rows){
       ?`<button class="report-btn reported" disabled>✓ Sent</button>`
       :`<button class="report-btn" onclick="openReport(${r.id},'${esc(r.name)}','${esc(r.country)}')" title="Report issue or suggest link">Report</button>`;
       
-    return`<tr class="${ok?'':'oos'}">
+    return`<tr class="${ok?'':'oos'} ${r.is_prescription?'rx-row':''}">
       <td class="ctr"><span class="status-dot ${ok?'in':'out'}" title="${ok?'In stock':'Out of stock'}"></span></td>
-      <td class="name-cell" title="${esc(r.name)}">${esc(r.name)}${r.notes?`<small>${esc(r.notes)}</small>`:''}</td>
+      <td class="name-cell" title="${esc(r.name)}">${esc(r.name)}${r.is_prescription?` <span class="rx-badge" title="Prescription item">Rx</span>`:''} ${r.notes?`<small>${esc(r.notes)}</small>`:''}</td>
       <td><span class="tag tag-country">${esc(r.country||'—')}</span></td>
       <td>${r.website?`<span class="tag tag-source">${esc(r.website)}</span>`:'<span style="color:var(--muted)">—</span>'}</td>
       <td>${r.specification?`<span class="tag ${isNV?'tag-nonveg':'tag-spec'}">${esc(r.specification)}</span>`:'<span style="color:var(--muted)">—</span>'}</td>
@@ -453,7 +473,7 @@ function renderCards(rows){
     
     return`<div class="card${ok?'':' oos'}" onclick="openSlide(${r.id})">
       <div class="card-top">
-        <div><div class="card-name">${esc(r.name)}</div><div class="card-tags"><span class="tag tag-country">${esc(r.country||'—')}</span>${r.specification?`<span class="tag ${isNV?'tag-nonveg':'tag-spec'}">${esc(r.specification)}</span>`:''}</div></div>
+        <div><div class="card-name">${esc(r.name)}${r.is_prescription?` <span class="rx-badge">Rx</span>`:''}</div><div class="card-tags"><span class="tag tag-country">${esc(r.country||'—')}</span>${r.specification?`<span class="tag ${isNV?'tag-nonveg':'tag-spec'}">${esc(r.specification)}</span>`:''}</div></div>
         <span class="status-dot ${ok?'in':'out'}" style="margin-top:4px" title="${ok?'In stock':'Out of stock'}"></span>
       </div>
       ${r.dose||r.website?`<div style="font-size:12px;color:var(--muted)">${esc(r.website||'')}${r.website&&r.dose?' · ':''}${esc(r.dose||'')}</div>`:''}
@@ -472,7 +492,7 @@ function openSlide(id){
   const r=allData.find(x=>x.id===id);if(!r)return;
   const ok=r.in_stock!==false;
   const alreadyReported=reported.has(r.id);
-  document.getElementById('spTitle').textContent=r.name;
+  document.getElementById('spTitle').innerHTML=esc(r.name)+(r.is_prescription?' <span class="rx-badge" style="font-size:11px;vertical-align:middle">Rx</span>':'');
   document.getElementById('spBody').innerHTML=`
     <div class="sp-row"><div class="sp-lbl">Country</div><div class="sp-val"><span class="tag tag-country">${esc(r.country||'—')}</span></div></div>
     <div class="sp-row"><div class="sp-lbl">Specification</div><div class="sp-val">${r.specification?`<span class="tag tag-spec">${esc(r.specification)}</span>`:'—'}</div></div>
@@ -511,14 +531,16 @@ async function submitReport(){
   if(!r)return;
   const suggestedLink=document.getElementById('rLink').value.trim();
   const notes=document.getElementById('rNote').value.trim();
+  const rxFlag = r.is_prescription ? '[PRESCRIPTION ITEM] ' : '';
   const{error}=await db.from('suggestions').insert([{
     supplement_id:reportId,
     supplement_name:r.name,
     country:r.country,
     reported_out_of_stock:true,
     suggested_link:suggestedLink,
-    notes:notes,
-    reviewed:false
+    notes: rxFlag + notes,
+    reviewed:false,
+    is_prescription: r.is_prescription || false
   }]);
   if(error){toast('Failed to submit. Please try again.',true);return;}
   reported.add(reportId);
@@ -548,7 +570,6 @@ async function submitNewSugg(){
   const link = document.getElementById('nsLink').value.trim();
   const notes = document.getElementById('nsNote').value.trim();
   
-  // Add a clear tag so the admin knows this is a completely new suggestion
   const finalNotes = "NEW SUPPLEMENT SUGGESTION\n" + notes;
 
   const {error} = await db.from('suggestions').insert([{
